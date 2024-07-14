@@ -1,11 +1,14 @@
 package top.caoxuan.tortoise;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.os.Bundle;
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
 
@@ -25,7 +28,9 @@ import android.view.View;
 
 import android.view.Menu;
 import android.view.MenuItem;
+import android.webkit.WebSettings;
 import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -37,11 +42,12 @@ public class MainActivity extends AppCompatActivity {
     private static final String DECODED_CONTENT_KEY = "codedContent";
     private static final String DECODED_BITMAP_KEY = "codedBitmap";
     private static final int REQUEST_CODE_SCAN = 0x0000;
-
+    private WebView webView;
 
     private Button btn_scan;
     //private TextView tv_scanResult;
 
+    @SuppressLint("SetJavaScriptEnabled")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -63,6 +69,13 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+
+        webView = findViewById(R.id.web_view);
+        WebSettings webSettings = webView.getSettings();
+        webSettings.setJavaScriptEnabled(true);
+        webSettings.setDomStorageEnabled(true);
+        webSettings.setJavaScriptCanOpenWindowsAutomatically(true);
+        webSettings.setTextZoom(100);
     }
 
     @Override
@@ -124,10 +137,39 @@ public class MainActivity extends AppCompatActivity {
 
                 //tv_scanResult.setText("你扫描到的内容是：" + content);
                 Log.d("cx",content);
+                JSONObject jsonObject = JSON.parseObject(content);
+                String username = jsonObject.getString("username");
+                String password = jsonObject.getString("password");
+                String url = jsonObject.getString("url");
+                webView.setWebViewClient(new MyWebViewClient(username, password));
+                webView.loadUrl(url);
             }
 
         }
     }
+    static class MyWebViewClient extends WebViewClient {
+
+        String username;
+        String password;
+
+        public MyWebViewClient(String username, String password) {
+            this.username = username;
+            this.password = password;
+        }
+
+        @Override
+        public void onPageFinished(WebView view, String url) {
+            super.onPageFinished(view, url);
+           /* String username = "user@caoxuan.top";
+            String password = "bc03cfa0-26b1-4a58-bb80-b33dbbef4436";*/
+            view.loadUrl("javascript: {alert();" +
+                    "document.getElementById('inputEmail').value = '" + username + "';" +
+                    "document.getElementById('inputPassword').value = '" + password + "';" +
+                    "var loginForm = document.getElementById('form');" +
+                    "loginForm.submit(); }");
+        }
+    }
+
 
 
 }
